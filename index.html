@@ -25,80 +25,72 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
 </script>
   <script>(function(){function m(a){var h=a.getAttribute("href");if(!h)return;try{var u=new URL(h,document.baseURI);if((u.protocol==="http:"||u.protocol==="https:")&&u.host!==location.host){a.target="_blank";a.rel="noopener noreferrer";}}catch(e){}}function s(){document.querySelectorAll("a[href]").forEach(m);}if(document.readyState!=="loading"){s();}else{document.addEventListener("DOMContentLoaded",s);}document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[href]");if(a){m(a);}},true);})();</script>
   <script type="application/json" data-clippy-inline-media-manifest="1">{"version":1,"slots":[]}</script>
-<!-- Firebase COMPAT SDK - Conexão garantida -->
+<!-- FIREBASE IGUAL + CONECTADO - INJETADO -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
-// Configuração Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAxz99PYEfO54SeKt7vB13ijXXxryRGqlA",
-  authDomain: "controle-de-estoque-98bf1.firebaseapp.com",
-  databaseURL: "https://controle-de-estoque-98bf1-default-rtdb.firebaseio.com",
-  projectId: "controle-de-estoque-98bf1",
-  storageBucket: "controle-de-estoque-98bf1.firebasestorage.app",
-  messagingSenderId: "845427057904",
-  appId: "1:845427057904:web:5420867e521068763ace35",
-  measurementId: "G-FK7QX6KTPR"
-};
-console.log('🔥 Inicializando Firebase...');
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-window._firebaseDB = db;
-console.log('✅ Firebase inicializado:', firebaseConfig.databaseURL);
-// Status visual
-function createStatus(){
-  let el = document.getElementById('firebase-status');
-  if(!el){
-    el = document.createElement('div');
-    el.id = 'firebase-status';
-    el.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:99999;background:#0f172a;color:white;padding:10px 14px;border-radius:9999px;font-size:12px;font-family:system-ui;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2)';
-    el.innerHTML = '<span style="width:8px;height:8px;background:#fbbf24;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite"></span> Conectando Firebase...';
-    document.body.appendChild(el);
+(function(){
+  const firebaseConfig = {
+    apiKey: "AIzaSyAxz99PYEfO54SeKt7vB13ijXXxryRGqlA",
+    authDomain: "controle-de-estoque-98bf1.firebaseapp.com",
+    databaseURL: "https://controle-de-estoque-98bf1-default-rtdb.firebaseio.com",
+    projectId: "controle-de-estoque-98bf1",
+    storageBucket: "controle-de-estoque-98bf1.firebasestorage.app",
+    messagingSenderId: "845427057904",
+    appId: "1:845427057904:web:5420867e521068763ace35"
+  };
+  try{
+    if(!firebase.apps.length){ firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+    window._fbDB = db;
+    console.log('🔥 Firebase inicializado');
+    // Cria badge
+    function getBadge(){
+      let el=document.getElementById('firebase-status-badge');
+      if(!el){
+        el=document.createElement('div');
+        el.id='firebase-status-badge';
+        el.style.cssText='position:fixed;bottom:16px;right:16px;z-index:2147483647;background:#0f172a;color:white;padding:10px 14px;border-radius:9999px;font-size:11px;font-family:system-ui,Segoe UI,Roboto;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2)';
+        el.innerHTML='<span style="width:8px;height:8px;background:#fbbf24;border-radius:50%;display:inline-block;animation:fbpulse 1.5s infinite"></span> Conectando Firebase...';
+        document.body.appendChild(el);
+        const style=document.createElement('style');
+        style.textContent='@keyframes fbpulse{0%,100%{opacity:1}50%{opacity:.3}}';
+        document.head.appendChild(style);
+      }
+      return el;
+    }
+    function setBadge(html, bg){
+      const el=getBadge();
+      el.innerHTML=html;
+      if(bg) el.style.background=bg;
+    }
+    // Verifica conexão
+    db.ref('.info/connected').on('value', snap=>{
+      if(snap.val()===true){
+        setBadge('<span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></span> Firebase OK - Conectado',' #065f46');
+      }else{
+        setBadge('<span style="width:8px;height:8px;background:#fbbf24;border-radius:50%;display:inline-block;animation:fbpulse 1.5s infinite"></span> Conectando...','#78350f');
+      }
+    });
+    // Teste de escrita - exatamente o que mostrou na sua print
+    db.ref('teste_conexao').set({ok:true, hora:new Date().toISOString(), origem:'controle-semi-acabado-versao-original'}).then(()=>{
+      console.log('✅ Firebase teste escrita OK');
+      setBadge('<span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></span> Firebase OK - Teste escrita funcionou!','#065f46');
+    }).catch(err=>{
+      console.error('❌ Firebase erro:', err);
+      setBadge('❌ Erro Firebase: '+err.message+' - Libere Rules','#7f1d1d');
+      if(err.message.includes('Permission')){
+        alert('Firebase: Permission denied\n\nVá no Firebase Console > Realtime Database > Rules e coloque:\n{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}');
+      }
+    });
+    // Expõe funções globais para salvar depois
+    window.salvarNoFirebase = (path, dados) => db.ref(path).set(dados);
+    window.lerDoFirebase = (path, cb) => db.ref(path).on('value', snap=>cb(snap.val()));
+  }catch(e){
+    console.error('Firebase init erro', e);
+    alert('Erro ao iniciar Firebase: '+e.message);
   }
-  return el;
-}
-let statusEl = null;
-document.addEventListener('DOMContentLoaded', ()=>{ statusEl = createStatus(); });
-function setStatus(html, bg){
-  if(!statusEl) statusEl = createStatus();
-  statusEl.innerHTML = html;
-  if(bg) statusEl.style.background = bg;
-}
-const DB_PATH = 'controle_semi_acabado_v2';
-// TESTE DE CONEXÃO IMEDIATO
-db.ref('.info/connected').on('value', snap => {
-  if(snap.val() === true){
-    setStatus('<span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></span> Firebase Conectado • Online', '#065f46');
-    console.log('✅ Firebase Online');
-  } else {
-    setStatus('<span style="width:8px;height:8px;background:#fbbf24;border-radius:50%"></span> Conectando...', '#78350f');
-  }
-});
-// Teste leitura/escrita
-db.ref('teste_conexao').set({ok:true, hora:new Date().toISOString(), teste:'conexao'}).then(()=>{
-  console.log('✅ Teste escrita OK');
-  setStatus('<span style="width:8px;height:8px;background:#22c55e;border-radius:50%"></span> Firebase OK - Teste escrita funcionou!', '#065f46');
-}).catch(err=>{
-  console.error('❌ Erro Firebase:', err);
-  setStatus('❌ Erro: '+err.message+' - Verifique Rules', '#7f1d1d');
-  // Mostra instrução de Rules
-  alert('Firebase erro: '+err.message+'\n\nVá no Firebase Console > Realtime Database > Rules e coloque:\n{\n  \"rules\": {\n    \".read\": true,\n    \".write\": true\n  }\n}');
-});
-// Função global para salvar
-window.salvarNoFirebase = (dados) => {
-  return db.ref(DB_PATH).set({...dados, _updatedAt: new Date().toISOString(), _origem: 'controle-semi-acabado'}).then(()=>{
-    setStatus('<span style="width:8px;height:8px;background:#22c55e;border-radius:50%"></span> Sincronizado • '+new Date().toLocaleTimeString('pt-BR'), '#065f46');
-  });
-};
-// Função para escutar dados
-window.escutarFirebase = (callback) => {
-  db.ref(DB_PATH).on('value', snap => {
-    const data = snap.val();
-    if(data) callback(data);
-  });
-};
-console.log('🔥 Firebase pronto para uso: window._firebaseDB, window.salvarNoFirebase, window.escutarFirebase');
+})();
 </script>
-<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>
 </body>
 </html>
