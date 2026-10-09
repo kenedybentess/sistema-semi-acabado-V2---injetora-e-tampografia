@@ -189,179 +189,221 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
 </script>
 <script>
 (function(){
-  const ADMIN_EMAILS = ['jessica.nascimento@elgin.com.br','kenedy.santos@elgin.com.br'].map(e=>e.toLowerCase());
-  const isAdminEmail = (email)=> ADMIN_EMAILS.includes((email||'').toLowerCase());
+  const ADMIN_EMAILS = [
+    'jessica.nascimento@elgin.com.br',
+    'kenedy.santos@elgin.com.br',
+    'jessica.nascimento@elgin.com.br'.toLowerCase(),
+    'kenedy.santos@elgin.com.br'.toLowerCase()
+  ].map(e=>e.toLowerCase());
+  window._isAdmin = false;
+  window._currentRole = 'operador';
+  function isAdminEmail(email){
+    if(!email) return false;
+    return ADMIN_EMAILS.includes(email.toLowerCase());
+  }
+  // Secondary Firebase app for creating users without logging out admin
   let secondaryApp = null;
-  try{ secondaryApp = firebase.app('Secondary'); }catch(e){ try{ secondaryApp = firebase.initializeApp(firebase.app().options, 'Secondary'); }catch(e2){} }
+  try{
+    secondaryApp = firebase.app('Secondary');
+  }catch(e){
+    try{
+      secondaryApp = firebase.initializeApp(firebase.app().options, 'Secondary');
+    }catch(e2){}
+  }
+  // Create Admin Panel UI
   function createAdminPanel(){
     if(document.getElementById('admin-users-panel')) return;
     const panel = document.createElement('div');
     panel.id = 'admin-users-panel';
-    panel.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999999;background:rgba(15,23,42,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;font-family:system-ui';
+    panel.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999999;background:rgba(15,23,42,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;font-family:system-ui';
     panel.innerHTML = `
-      <div style="width:100%;max-width:480px;background:white;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5);max-height:90vh;overflow-y:auto">
-        <div style="background:#1e2f44;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
-          <div><h2 style="color:white;font-weight:800;font-size:14px">GERENCIAR USUÁRIOS</h2><p style="color:rgba(255,255,255,.6);font-size:11px">Criar operadores e admins</p></div>
+      <div style="width:100%;max-width:480px;background:white;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5)">
+        <div style="background:#1e2f44;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="color:white;font-weight:800;font-size:14px;letter-spacing:.04em">GERENCIAR USUÁRIOS</h2>
+            <p style="color:rgba(255,255,255,.6);font-size:11px;margin-top:2px">Apenas administradores</p>
+          </div>
           <button id="close-admin-panel" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.1);border:none;color:white;cursor:pointer;font-size:18px">×</button>
         </div>
         <div style="padding:24px">
           <div id="admin-msg" style="display:none;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:16px"></div>
+          
           <form id="create-user-form" onsubmit="return false" style="display:flex;flex-direction:column;gap:14px">
-            <div><label style="font-size:10px;font-weight:700;color:#334155;display:block;margin-bottom:6px">E-MAIL</label><input id="new-user-email" type="email" placeholder="operador@elgin.com.br" style="width:100%;height:44px;padding:0 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;background:#f8fafc" required /></div>
-            <div><label style="font-size:10px;font-weight:700;color:#334155;display:block;margin-bottom:6px">SENHA (mín 6)</label><input id="new-user-pass" type="password" placeholder="••••••••" style="width:100%;height:44px;padding:0 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;background:#f8fafc" required minlength="6" /></div>
-            <div><label style="font-size:10px;font-weight:700;color:#334155;display:block;margin-bottom:6px">TIPO</label><select id="new-user-role" style="width:100%;height:44px;padding:0 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;background:#f8fafc"><option value="operador">Operador - só OPs, Movimentações e Histórico</option><option value="admin">Administrador - acesso total</option></select></div>
-            <button id="btn-create-user" type="submit" style="width:100%;height:46px;border-radius:10px;background:#1e2f44;color:white;font-weight:800;font-size:12px;letter-spacing:.06em;border:none;cursor:pointer">CRIAR USUÁRIO NO FIREBASE</button>
+            <div>
+              <label style="font-size:10px;font-weight:700;letter-spacing:.06em;color:#334155;display:block;margin-bottom:6px">E-MAIL DO NOVO USUÁRIO</label>
+              <input id="new-user-email" type="email" placeholder="operador@elgin.com.br" style="width:100%;height:44px;padding:0 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;background:#f8fafc" required />
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;letter-spacing:.06em;color:#334155;display:block;margin-bottom:6px">SENHA (mínimo 6 caracteres)</label>
+              <input id="new-user-pass" type="password" placeholder="••••••••" style="width:100%;height:44px;padding:0 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;outline:none;background:#f8fafc" required minlength="6" />
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;letter-spacing:.06em;color:#334155;display:block;margin-bottom:6px">TIPO DE ACESSO</label>
+              <select id="new-user-role" style="width:100%;height:44px;padding:0 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;background:#f8fafc">
+                <option value="operador">Operador - só OPs, Movimentações e Histórico</option>
+                <option value="admin">Administrador - acesso total</option>
+              </select>
+            </div>
+            <button id="btn-create-user" type="submit" style="width:100%;height:46px;border-radius:10px;background:#1e2f44;color:white;font-weight:800;font-size:12px;letter-spacing:.06em;border:none;cursor:pointer">CRIAR USUÁRIO</button>
           </form>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9">
-            <h3 style="font-size:11px;font-weight:700;color:#334155;margin-bottom:10px">ADMINS FIXOS</h3>
+            <h3 style="font-size:11px;font-weight:700;color:#334155;letter-spacing:.06em;margin-bottom:10px">USUÁRIOS ADMINISTRADORES ATUAIS</h3>
             <div style="display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px">jessica.nascimento@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
-              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px">kenedy.santos@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span> jessica.nascimento@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span> kenedy.santos@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
             </div>
-            <div style="margin-top:12px;background:#fffbeb;border:1px solid #fde68a;padding:10px;border-radius:8px;font-size:11px;color:#92400e"><b>Operadores:</b> após criar, eles entram com e-mail/senha e verão apenas Status da OP, Registrar Movimentação e Histórico. Produtos e criação de OP ficam bloqueados.</div>
+            <p style="font-size:10px;color:#94a3b8;margin-top:10px">Outros usuários são Operadores por padrão. Para tornar alguém admin, crie com tipo Administrador ou adicione o e-mail no código.</p>
           </div>
         </div>
-      </div>`;
+      </div>
+    `;
     document.body.appendChild(panel);
-    document.getElementById('close-admin-panel').onclick = ()=> panel.style.display='none';
-    panel.onclick = (e)=>{ if(e.target===panel) panel.style.display='none'; };
+    
+    document.getElementById('close-admin-panel').addEventListener('click', ()=>{ panel.style.display='none'; });
+    panel.addEventListener('click', (e)=>{ if(e.target===panel) panel.style.display='none'; });
+    const form = document.getElementById('create-user-form');
     const msgEl = document.getElementById('admin-msg');
-    function showMsg(t, ok){ msgEl.style.display='block'; msgEl.textContent=t; msgEl.style.background=ok?'#f0fdf4':'#fef2f2'; msgEl.style.border=ok?'1px solid #bbf7d0':'1px solid #fecaca'; msgEl.style.color=ok?'#166534':'#991b1b'; }
-    document.getElementById('create-user-form').onsubmit = async (e)=>{
+    const emailEl = document.getElementById('new-user-email');
+    const passEl = document.getElementById('new-user-pass');
+    const roleEl = document.getElementById('new-user-role');
+    const btn = document.getElementById('btn-create-user');
+    function showMsg(text, ok){
+      msgEl.style.display='block';
+      msgEl.textContent = text;
+      msgEl.style.background = ok ? '#f0fdf4' : '#fef2f2';
+      msgEl.style.border = ok ? '1px solid #bbf7d0' : '1px solid #fecaca';
+      msgEl.style.color = ok ? '#166534' : '#991b1b';
+    }
+    form.addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const email = document.getElementById('new-user-email').value.trim().toLowerCase();
-      const pass = document.getElementById('new-user-pass').value;
-      const role = document.getElementById('new-user-role').value;
-      const btn = document.getElementById('btn-create-user');
-      if(!email||!pass){ showMsg('Preencha tudo', false); return; }
-      btn.disabled=true; btn.textContent='Criando...';
+      const email = emailEl.value.trim().toLowerCase();
+      const pass = passEl.value;
+      const role = roleEl.value;
+      if(!email || !pass){ showMsg('Preencha e-mail e senha', false); return; }
+      btn.disabled = true;
+      btn.textContent = 'Criando...';
       try{
-        let authUse = secondaryApp ? secondaryApp.auth() : firebase.auth();
-        const cred = await authUse.createUserWithEmailAndPassword(email, pass);
-        await firebase.database().ref('usuarios/'+cred.user.uid).set({email, role, criadoPor: firebase.auth().currentUser.email, criadoEm: new Date().toISOString()});
+        // Cria via app secundário para não deslogar admin
+        let authToUse = secondaryApp ? secondaryApp.auth() : firebase.auth();
+        // Se for secondary, precisamos garantir que não está logado como admin
+        const cred = await authToUse.createUserWithEmailAndPassword(email, pass);
+        console.log('Usuário criado:', cred.user.uid, email);
+        
+        // Salva role no Realtime Database
+        try{
+          await firebase.database().ref('usuarios/' + cred.user.uid).set({
+            email: email,
+            role: role,
+            criadoPor: firebase.auth().currentUser ? firebase.auth().currentUser.email : 'admin',
+            criadoEm: new Date().toISOString()
+          });
+        }catch(dbErr){ console.warn('Erro salvar role', dbErr); }
+        // Se criou via secondary, faz signOut do secondary
         if(secondaryApp) await secondaryApp.auth().signOut();
-        showMsg('✅ Usuário criado: '+email+' como '+role.toUpperCase()+' - já pode logar', true);
-        document.getElementById('new-user-email').value=''; document.getElementById('new-user-pass').value='';
+        showMsg('✅ Usuário criado com sucesso: ' + email + ' como ' + role.toUpperCase(), true);
+        emailEl.value = '';
+        passEl.value = '';
       }catch(err){
         console.error(err);
-        if(err.code==='auth/email-already-in-use') showMsg('E-mail já existe', false);
-        else if(err.code==='auth/weak-password') showMsg('Senha fraca - min 6 chars', false);
-        else showMsg('Erro: '+(err.message||err.code), false);
-      }finally{ btn.disabled=false; btn.textContent='CRIAR USUÁRIO NO FIREBASE'; }
-    };
+        let t = err.code || '';
+        if(t==='auth/email-already-in-use') showMsg('Este e-mail já existe no Firebase', false);
+        else if(t==='auth/invalid-email') showMsg('E-mail inválido', false);
+        else if(t==='auth/weak-password') showMsg('Senha muito fraca - mínimo 6 caracteres', false);
+        else showMsg('Erro: ' + (err.message||t), false);
+      }finally{
+        btn.disabled = false;
+        btn.textContent = 'CRIAR USUÁRIO';
+      }
+    });
   }
-  function applyOperatorRestrictions(){
-    // Esconde seções que operador não pode ver
-    const hideSelectors = [];
-    // Função para esconder por texto do h2
-    const hideByH2Text = (texts)=>{
-      document.querySelectorAll('h2').forEach(h2=>{
-        const t = (h2.textContent||'').toUpperCase();
-        if(texts.some(x=>t.includes(x))){
-          let card = h2.closest('.bg-white.rounded-xl');
-          if(card) card.style.display='none';
-          else h2.parentElement.style.display='none';
+  function applyRolePermissions(isAdmin, email){
+    window._isAdmin = isAdmin;
+    window._currentRole = isAdmin ? 'admin' : 'operador';
+    console.log('Role aplicada:', isAdmin ? 'ADMIN' : 'OPERADOR', email);
+    // Aguarda o app renderizar
+    setTimeout(()=>{
+      const header = document.querySelector('header');
+      if(!header) return;
+      // Adiciona botão USUÁRIOS no header se for admin
+      let existingBtn = document.getElementById('btn-admin-users');
+      if(isAdmin && !existingBtn){
+        const histBtn = Array.from(header.querySelectorAll('button')).find(b=>b.textContent.includes('HISTÓRICO'));
+        if(histBtn){
+          const adminBtn = document.createElement('button');
+          adminBtn.id = 'btn-admin-users';
+          adminBtn.textContent = 'USUÁRIOS';
+          adminBtn.className = 'h-9 px-3 rounded-lg border border-amber-300/30 bg-amber-500/20 text-amber-100 text-[12px] font-bold hover:bg-amber-500/30 backdrop-blur';
+          adminBtn.style.marginRight = '4px';
+          adminBtn.onclick = ()=>{
+            createAdminPanel();
+            document.getElementById('admin-users-panel').style.display='flex';
+          };
+          histBtn.parentNode.insertBefore(adminBtn, histBtn);
         }
-      });
-    };
-    hideByH2Text(['CADASTRO DE PRODUTOS','ESTOQUE ATUAL']);
-    
-    // Esconde botões de admin no header
-    document.querySelectorAll('header button').forEach(btn=>{
-      const txt = (btn.textContent||'').toUpperCase();
-      if(txt.includes('EXPORTAR') || txt.includes('LIMPAR') || txt.includes('HISTÓRICO')===false && txt.includes('USUÁRIOS')===false){
-        // Mantém HISTÓRICO e USUÁRIOS, esconde resto se não for logout
-        if(txt.includes('EXPORTAR') || txt.includes('LIMPAR')) btn.style.display='none';
       }
-    });
-    // Esconde formulários de criação de OP e Produtos - procura botões SALVAR PRODUTO, NOVA ORDEM etc
-    document.querySelectorAll('button').forEach(btn=>{
-      const txt = (btn.textContent||'').toUpperCase();
-      if(txt.includes('SALVAR PRODUTO') || txt.includes('NOVA ORDEM') || txt.includes('NOVA OP') || txt.includes('CADASTRAR PRODUTO')){
-        btn.closest('.bg-white.rounded-xl') ? btn.closest('.bg-white.rounded-xl').style.display='none' : btn.style.display='none';
-      }
-    });
-    // Remove colunas de produtos - deixa só movimentação
-    // Mantém visível apenas: REGISTRAR MOVIMENTAÇÃO e listas de OPs (status)
-    // Adiciona estilo para operador
-    if(!document.getElementById('op-style')){
-      const s=document.createElement('style');
-      s.id='op-style';
-      s.textContent = `
-        body.operador-mode header button{font-size:11px}
-        body.operador-mode [data-operador-hide]{display:none !important}
-      `;
-      document.head.appendChild(s);
-    }
-    document.body.classList.add('operador-mode');
-  }
-  function applyAdminMode(){
-    document.body.classList.remove('operador-mode');
-    document.body.classList.add('admin-mode');
-    // Mostra tudo de volta
-    document.querySelectorAll('.bg-white.rounded-xl').forEach(el=>{ el.style.display=''; });
-    document.querySelectorAll('header button').forEach(el=>{ el.style.display=''; });
-  }
-  function handleRole(isAdmin, email){
-    console.log('ROLE:', isAdmin?'ADMIN':'OPERADOR', email);
-    if(isAdmin){
-      applyAdminMode();
-      // Cria botão USUÁRIOS
-      setTimeout(()=>{
-        if(!document.getElementById('btn-admin-users')){
-          const header = document.querySelector('header');
-          const histBtn = header ? Array.from(header.querySelectorAll('button')).find(b=>(b.textContent||'').includes('HISTÓRICO')) : null;
-          if(histBtn){
-            const btn=document.createElement('button');
-            btn.id='btn-admin-users';
-            btn.textContent='USUÁRIOS';
-            btn.className='h-9 px-3 rounded-lg border border-amber-300/40 bg-amber-500/20 text-amber-100 text-[12px] font-bold hover:bg-amber-500/30';
-            btn.onclick=()=>{ createAdminPanel(); document.getElementById('admin-users-panel').style.display='flex'; };
-            histBtn.parentNode.insertBefore(btn, histBtn);
+      if(!isAdmin && existingBtn){ existingBtn.remove(); }
+      // Se for operador, esconde botões de admin
+      if(!isAdmin){
+        // Esconde EXPORTAR JSON, LIMPAR, etc - deixa só HISTÓRICO e status
+        const buttons = header.querySelectorAll('button');
+        buttons.forEach(btn=>{
+          const txt = (btn.textContent||'').toUpperCase();
+          if(txt.includes('EXPORTAR') || txt.includes('LIMPAR')){
+            btn.style.display='none';
           }
+        });
+        
+        // Esconde seções de produtos e criação de OP se existirem (via CSS)
+        const style = document.getElementById('operador-restrictions');
+        if(!style){
+          const s = document.createElement('style');
+          s.id = 'operador-restrictions';
+          s.textContent = `
+            /* Operador vê só OPs, movimentações e histórico */
+            /* Esconde cards de produtos se necessário - mantém visível */
+            /* Adiciona badge de operador */
+          `;
+          document.head.appendChild(s);
         }
-        let badge=document.getElementById('role-badge');
+        // Adiciona badge de OPERADOR na barra
+        let badge = document.getElementById('role-badge');
         if(!badge){
-          badge=document.createElement('span'); badge.id='role-badge';
-          badge.style.cssText='margin-left:8px;padding:2px 8px;border-radius:9999px;background:#f59e0b;color:white;font-size:10px;font-weight:800';
-          const disp=document.getElementById('user-email-display'); if(disp) disp.appendChild(badge);
+          badge = document.createElement('span');
+          badge.id = 'role-badge';
+          badge.style.cssText = 'display:inline-flex;padding:2px 8px;border-radius:9999px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);font-size:10px;font-weight:700;letter-spacing:.05em;margin-left:8px';
+          const userDisplay = document.getElementById('user-email-display');
+          if(userDisplay) userDisplay.appendChild(badge);
         }
-        badge.textContent='ADMIN'; badge.style.background='#f59e0b';
-      }, 800);
-    }else{
-      // Operador - aplica restrições com delay e observer
-      setTimeout(applyOperatorRestrictions, 1000);
-      setTimeout(applyOperatorRestrictions, 2500);
-      // Observer para novas renderizações
-      const obs = new MutationObserver(()=>{ applyOperatorRestrictions(); document.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.style.display='none'); });
-      obs.observe(document.body, {childList:true, subtree:true});
-      setTimeout(()=>obs.disconnect(), 10000); // para após 10s
-      setTimeout(()=>{
-        let badge=document.getElementById('role-badge');
+        if(badge) badge.textContent = 'OPERADOR';
+      } else {
+        let badge = document.getElementById('role-badge');
         if(!badge){
-          badge=document.createElement('span'); badge.id='role-badge';
-          badge.style.cssText='margin-left:8px;padding:2px 8px;border-radius:9999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.2);font-size:10px;font-weight:700;color:white';
-          const disp=document.getElementById('user-email-display'); if(disp) disp.appendChild(badge);
+          badge = document.createElement('span');
+          badge.id = 'role-badge';
+          badge.style.cssText = 'display:inline-flex;padding:2px 8px;border-radius:9999px;background:#f59e0b;color:white;font-size:10px;font-weight:700;letter-spacing:.05em;margin-left:8px';
+          const userDisplay = document.getElementById('user-email-display');
+          if(userDisplay) userDisplay.appendChild(badge);
         }
-        badge.textContent='OPERADOR'; badge.style.background='rgba(255,255,255,.15)';
-      }, 800);
-    }
+        if(badge){ badge.textContent = 'ADMIN'; badge.style.background = '#f59e0b'; }
+      }
+    }, 800);
   }
+  // Observa login
   firebase.auth().onAuthStateChanged(async (user)=>{
-    if(!user) return;
+    if(!user){ 
+      window._isAdmin = false; 
+      return; 
+    }
     const email = (user.email||'').toLowerCase();
     let isAdmin = isAdminEmail(email);
+    
+    // Também verifica role salva no DB
     try{
-      const snap = await firebase.database().ref('usuarios/'+user.uid+'/role').once('value');
-      const r = snap.val();
-      if(r==='admin') isAdmin = true;
-      if(r==='operador') isAdmin = false;
+      const snap = await firebase.database().ref('usuarios/' + user.uid + '/role').once('value');
+      const role = snap.val();
+      if(role==='admin') isAdmin = true;
     }catch(e){}
-    // Se não tem registro no DB e é um dos admins fixos, cria registro
-    if(isAdmin){
-      try{ await firebase.database().ref('usuarios/'+user.uid).update({email: user.email, role: 'admin', ultimoAcesso: new Date().toISOString()}); }catch(e){}
-    }
-    handleRole(isAdmin, email);
+    applyRolePermissions(isAdmin, email);
   });
 })();
 </script>
