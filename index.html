@@ -342,7 +342,6 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
       }
       if(!isAdmin && existingBtn){ existingBtn.remove(); }
       if(!isAdmin){
-        console.log('Aplicando restrições de OPERADOR - mantendo REGISTRAR MOVIMENTAÇÃO');
         const aplicarRestricoes = () => {
           // 1. ESCONDE CADASTRO DE PRODUTOS
           document.querySelectorAll('h2').forEach(h2=>{
@@ -356,124 +355,104 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
                 container.setAttribute('data-hidden-operador','true');
               }
             }
-            // 2. ESCONDE FORM DE CRIAR OP (ORDENS DE PRODUÇÃO)
             if(txt.includes('ORDENS DE PRODUÇÃO')){
               let container = h2.closest('div.bg-white.rounded-xl');
               if(container){
-                // Esconde só o FORM dentro deste container (onde está CRIAR OP)
                 const form = container.querySelector('form');
                 if(form){
                   form.style.display='none';
                   form.setAttribute('data-hidden-operador','true');
-                  console.log('Form CRIAR OP escondido para operador');
                 }
-                // Também esconde qualquer botão CRIAR OP dentro
-                container.querySelectorAll('button').forEach(btn=>{
-                  const bt = (btn.textContent||'').toUpperCase();
-                  if(bt.includes('CRIAR OP') || bt.includes('CRIAR ORDEM')){
-                    btn.style.display='none';
-                    btn.disabled=true;
-                    btn.setAttribute('data-blocked-operador','true');
-                  }
-                });
               }
             }
           });
-          // 3. BLOQUEIA TODOS OS BOTÕES DE CRIAR/EDITAR (exceto REGISTRAR MOVIMENTAÇÃO)
-          document.querySelectorAll('button').forEach(btn=>{
+          // 2. BLOQUEIA BOTÕES - OPERADOR NÃO PODE CRIAR, EDITAR, EXCLUIR ORDEM
+          document.querySelectorAll('button, a[role="button"]').forEach(btn=>{
             const txt = (btn.textContent||'').toUpperCase().trim();
-            if(!txt) return;
-            // WHITELIST ABSOLUTA
-            if(txt.includes('REGISTRAR') && txt.includes('MOVIMENT')) return;
-            if(txt.includes('CONFIRMAR') && (txt.includes('INJE') || txt.includes('TAMP') || txt.includes('SAÍDA') || txt.includes('SAIDA'))) return;
-            if(txt.includes('SALVAR MOVIMENT')) return;
-            // Se estiver dentro da seção REGISTRAR MOVIMENTAÇÃO, nunca bloqueia
+            const title = (btn.getAttribute('title')||'').toUpperCase();
+            const combined = (txt + ' ' + title).toUpperCase();
+            if(!combined.trim()) {
+              // Botão só com ícone (lixeira/lápis) em tabela de ordens -> bloqueia
+              const row = btn.closest('tr');
+              if(row){
+                const card = btn.closest('div.bg-white.rounded-xl');
+                if(card){
+                  const h2 = card.querySelector('h2');
+                  if(h2 && h2.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')) return;
+                  if(h2 && h2.textContent.toUpperCase().includes('ORDENS DE PRODUÇÃO')){
+                    btn.style.display='none';
+                    btn.setAttribute('data-blocked-operador','true');
+                    return;
+                  }
+                }
+                // Se está em tabela de ordens, bloqueia
+                if(row.closest('div') && row.closest('div').textContent.toUpperCase().includes('ORDENS DE PRODUÇÃO')){
+                  btn.style.display='none';
+                  btn.setAttribute('data-blocked-operador','true');
+                }
+              }
+              return;
+            }
+            // WHITELIST - REGISTRAR MOVIMENTAÇÃO SEMPRE LIBERADO
+            if(combined.includes('REGISTRAR') && combined.includes('MOVIMENT')) return;
+            if(combined.includes('CONFIRMAR')) return; // botão confirmar movimentação
             const closestCard = btn.closest('div.bg-white.rounded-xl');
             if(closestCard){
               const h2 = closestCard.querySelector('h2');
-              if(h2 && h2.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')){
-                return;
-              }
+              if(h2 && h2.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')) return;
             }
-            // Bloqueia criar/editar
-            if(txt === 'CRIAR OP' || txt.includes('CRIAR OP') || txt === 'CRIAR' || txt.includes('NOVA ORDEM') || txt.includes('NOVA OP')){
-              // Se não for da movimentação
-              if(!btn.closest('div')?.textContent?.toUpperCase().includes('REGISTRAR MOVIMENTA')){
-                btn.style.display='none';
-                btn.disabled=true;
-                btn.setAttribute('data-blocked-operador','true');
-              }
-            }
-            if(txt === 'EDITAR' || txt.includes('EDITAR OP') || txt.includes('EDITAR ORDEM')){
+            // PROIBIDOS PARA OPERADOR
+            const proibidos = ['CRIAR OP','CRIAR ORDEM','NOVA ORDEM','NOVA OP','EDITAR','EXCLUIR','DELETAR','APAGAR','REMOVER','ARQUIVAR SELECIONADAS'];
+            if(proibidos.some(p => combined.includes(p))){
               btn.style.display='none';
               btn.disabled=true;
+              btn.style.pointerEvents='none';
               btn.setAttribute('data-blocked-operador','true');
             }
-            if(txt.includes('EXPORTAR') || txt.includes('LIMPAR') || txt === 'EXCLUIR'){
+            if(combined.includes('EXPORTAR') || combined.includes('LIMPAR')){
               btn.style.display='none';
             }
           });
-          // 4. DESABILITA INPUTS DO FORM DE ORDEM SE AINDA VISÍVEL
+          // 2b. Bloqueia todos os botões dentro de linhas de ordens (ícones sem texto)
+          document.querySelectorAll('table tr').forEach(tr=>{
+            const card = tr.closest('div.bg-white.rounded-xl');
+            if(!card) return;
+            const h2 = card.querySelector('h2');
+            if(!h2) return;
+            if(h2.textContent.toUpperCase().includes('ORDENS DE PRODUÇÃO')){
+              tr.querySelectorAll('button').forEach(btn=>{
+                const txt = (btn.textContent||'').toUpperCase().trim();
+                // Se botão não é REGISTRAR, esconde se for ação de linha
+                if(txt === '' || txt === 'EDITAR' || txt.includes('EXCLUIR') || txt.includes('EDITAR') || txt.length < 3){
+                  // Não esconde se for botão de paginação
+                  if(!btn.textContent.match(/\d+/)){
+                    btn.style.display='none';
+                    btn.setAttribute('data-blocked-operador','true');
+                  }
+                }
+                // Também esconde se tiver EDITAR/EXCLUIR no title
+                const title = (btn.getAttribute('title')||'').toUpperCase();
+                if(title.includes('EDITAR') || title.includes('EXCLUIR') || title.includes('DELETAR')){
+                  btn.style.display='none';
+                  btn.setAttribute('data-blocked-operador','true');
+                }
+              });
+            }
+          });
+          // 3. Desabilita form de ordem
           document.querySelectorAll('form').forEach(form=>{
             if(form.getAttribute('data-hidden-operador')) return;
-            // Se form contém ID ORDEM e META QTD e está em ORDENS DE PRODUÇÃO, desabilita
             if(form.textContent.includes('ID ORDEM') && form.textContent.includes('META QTD')){
-              form.querySelectorAll('input, select, button').forEach(el=>{
-                if(el.textContent && el.textContent.toUpperCase().includes('REGISTRAR')) return;
-                el.disabled = true;
-                el.style.pointerEvents='none';
-                el.style.opacity='0.4';
-              });
-              // Esconde mesmo
               form.style.display='none';
+              form.setAttribute('data-hidden-operador','true');
             }
           });
         };
-        // INTERCEPTA SALVAMENTO NO FIREBASE PARA OPERADOR
-        if(!window._fbSettersOperadorPatched){
-          window._fbSettersOperadorPatched = true;
-          // Guarda referência original do scheduleSave
-          const originalSchedule = window._fbScheduleSave;
-          if(originalSchedule){
-            window._fbScheduleSave = function(){
-              if(!window._isAdmin){
-                // Verifica se está tentando salvar ordem ou produto novo
-                // Permite apenas se for movimentação (muda apenas stock)
-                // Para simplificar, bloqueia e mostra alerta apenas se detectar mudança em ordens/produtos
-                // Mas como não temos como diferenciar, vamos permitir salvar apenas movs
-                // A estratégia: deixa passar, mas o form já está escondido, então não chega aqui por UI
-                console.warn('Operador tentou salvar - bloqueado');
-                // Ainda chama para salvar movimentações? Melhor permitir mas logar
-                // Para garantir, só permite se a mudança for em movs
-                // Por enquanto bloqueia criação de ordens verificando se há ordens novas no DOM
-                // Como fallback, permite salvar (para não quebrar movimentação) mas o bloqueio visual já impede criar
-              }
-              return originalSchedule.apply(this, arguments);
-            };
-          }
-          // Bloqueia função global de criar ordem se existir
-          ['Ef','Sf','criarOrdem','salvarOrdem'].forEach(name=>{
-            if(window[name]){
-              const orig = window[name];
-              window[name] = function(e){
-                if(e && e.preventDefault) e.preventDefault();
-                if(!window._isAdmin){
-                  alert('⛔ OPERADOR: Você não tem permissão para criar ou editar ordens.\nApenas REGISTRAR MOVIMENTAÇÃO é permitido.');
-                  return false;
-                }
-                return orig.apply(this, arguments);
-              };
-            }
-          });
-        }
         let oldStyle = document.getElementById('operador-restrictions');
         if(oldStyle) oldStyle.remove();
         const st = document.createElement('style');
         st.id = 'operador-restrictions';
-        st.textContent = `
-          [data-blocked-operador="true"]{ display:none !important; pointer-events:none !important; }
-          [data-hidden-operador="true"]{ display:none !important; }
-        `;
+        st.textContent = `[data-blocked-operador="true"]{ display:none !important; pointer-events:none !important; } [data-hidden-operador="true"]{ display:none !important; }`;
         document.head.appendChild(st);
         aplicarRestricoes();
         if(window._operadorObserver) window._operadorObserver.disconnect();
@@ -494,8 +473,7 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
         if(window._operadorObserver) window._operadorObserver.disconnect();
         if(window._operadorInterval) clearInterval(window._operadorInterval);
         const s=document.getElementById('operador-restrictions'); if(s) s.remove();
-        document.querySelectorAll('[data-blocked-operador],[data-hidden-operador]').forEach(e=>{ e.style.display=''; e.disabled=false; e.style.pointerEvents=''; e.style.opacity=''; e.removeAttribute('data-blocked-operador'); e.removeAttribute('data-hidden-operador'); });
-        document.querySelectorAll('form').forEach(f=>{ f.querySelectorAll('input, select, button').forEach(el=>{ el.disabled=false; el.style.pointerEvents=''; el.style.opacity=''; }); });
+        document.querySelectorAll('[data-blocked-operador],[data-hidden-operador]').forEach(e=>{ e.style.display=''; e.disabled=false; e.style.pointerEvents=''; e.removeAttribute('data-blocked-operador'); e.removeAttribute('data-hidden-operador'); });
         let badge=document.getElementById('role-badge');
         if(!badge){ badge=document.createElement('span'); badge.id='role-badge'; badge.style.cssText='display:inline-flex;padding:2px 8px;border-radius:9999px;background:#f59e0b;color:white;font-size:10px;font-weight:700;letter-spacing:.05em;margin-left:8px'; const ud=document.getElementById('user-email-display'); if(ud) ud.appendChild(badge); }
         if(badge){ badge.textContent='ADMIN'; badge.style.background='#f59e0b'; }
