@@ -217,7 +217,7 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
     panel.id = 'admin-users-panel';
     panel.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999999;background:rgba(15,23,42,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;font-family:system-ui';
     panel.innerHTML = `
-      <div style="width:100%;max-width:480px;background:white;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5)">
+      <div style="width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:white;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,.5)">
         <div style="background:#1e2f44;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">
           <div>
             <h2 style="color:white;font-weight:800;font-size:14px;letter-spacing:.04em">GERENCIAR USUÁRIOS</h2>
@@ -244,15 +244,21 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
                 <option value="admin">Administrador - acesso total</option>
               </select>
             </div>
+            <div id="perm-box">
+              <label style="font-size:10px;font-weight:700;letter-spacing:.06em;color:#334155;display:block;margin-bottom:8px">PERMISSÕES • REGISTRAR MOVIMENTAÇÃO</label>
+              <p style="font-size:10px;color:#94a3b8;margin:-4px 0 8px">Vale para Operador. Administrador sempre tem acesso total.</p>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#f8fafc"><input id="perm-injecao" type="checkbox" checked style="width:16px;height:16px;accent-color:#1e2f44" /> <span style="font-size:12px;font-weight:700;color:#334155">INJEÇÃO</span><span style="margin-left:auto;font-size:10px;color:#94a3b8">Registrar injeção</span></label>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#f8fafc"><input id="perm-tampografia" type="checkbox" checked style="width:16px;height:16px;accent-color:#1e2f44" /> <span style="font-size:12px;font-weight:700;color:#334155">TAMPOGRAFIA</span><span style="margin-left:auto;font-size:10px;color:#94a3b8">Registrar tampografia</span></label>
+              <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;background:#f8fafc"><input id="perm-saida" type="checkbox" checked style="width:16px;height:16px;accent-color:#1e2f44" /> <span style="font-size:12px;font-weight:700;color:#334155">SAÍDA</span><span style="margin-left:auto;font-size:10px;color:#94a3b8">Registrar saída</span></label>
+            </div>
             <button id="btn-create-user" type="submit" style="width:100%;height:46px;border-radius:10px;background:#1e2f44;color:white;font-weight:800;font-size:12px;letter-spacing:.06em;border:none;cursor:pointer">CRIAR USUÁRIO</button>
           </form>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9">
-            <h3 style="font-size:11px;font-weight:700;color:#334155;letter-spacing:.06em;margin-bottom:10px">USUÁRIOS ADMINISTRADORES ATUAIS</h3>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span> jessica.nascimento@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
-              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span> kenedy.santos@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
-            </div>
-            <p style="font-size:10px;color:#94a3b8;margin-top:10px">Outros usuários são Operadores por padrão. Para tornar alguém admin, crie com tipo Administrador ou adicione o e-mail no código.</p>
+            <h3 style="font-size:11px;font-weight:700;color:#334155;letter-spacing:.06em;margin-bottom:10px">USUÁRIOS CADASTRADOS • EDITAR PERMISSÕES</h3>
+            <p style="font-size:10px;color:#94a3b8;margin:0 0 10px">Altere o tipo e as permissões e clique em SALVAR. O usuário não precisa ser recriado — vale no próximo login dele (se já estiver logado, peça para sair e entrar de novo).</p>
+            <input id="busca-usuario" type="text" placeholder="🔍 Buscar por e-mail..." style="width:100%;height:38px;padding:0 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12px;outline:none;background:#f8fafc;margin-bottom:10px" />
+            <div id="lista-usuarios" style="display:flex;flex-direction:column;gap:10px"><p style="font-size:12px;color:#94a3b8">Carregando usuários...</p></div>
+            <p id="lista-usuarios-vazia" style="display:none;font-size:11px;color:#94a3b8">Nenhum usuário encontrado. Usuários criados antes dessa versão podem não aparecer aqui — nesse caso, crie novamente ou cadastre a permissão dele no Firebase em <b>usuarios/{uid}/permissoes</b>.</p>
           </div>
         </div>
       </div>
@@ -266,6 +272,9 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
     const emailEl = document.getElementById('new-user-email');
     const passEl = document.getElementById('new-user-pass');
     const roleEl = document.getElementById('new-user-role');
+    const permBox = document.getElementById('perm-box');
+    const syncPermBox = ()=>{ const isAdm = roleEl.value==='admin'; if(permBox){ permBox.style.opacity = isAdm ? .45 : 1; permBox.style.pointerEvents = isAdm ? 'none' : 'auto'; } };
+    roleEl.addEventListener('change', syncPermBox); syncPermBox();
     const btn = document.getElementById('btn-create-user');
     function showMsg(text, ok){
       msgEl.style.display='block';
@@ -274,6 +283,62 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
       msgEl.style.border = ok ? '1px solid #bbf7d0' : '1px solid #fecaca';
       msgEl.style.color = ok ? '#166534' : '#991b1b';
     }
+    // ---- LISTA + EDIÇÃO DE USUÁRIOS JÁ CRIADOS ----
+    const listaEl = document.getElementById('lista-usuarios');
+    const buscaEl = document.getElementById('busca-usuario');
+    const vaziaEl = document.getElementById('lista-usuarios-vazia');
+    let _usuariosCache = {};
+    let _filtroUsuario = '';
+    if(buscaEl) buscaEl.addEventListener('input', ()=>{ _filtroUsuario = buscaEl.value.trim().toLowerCase(); renderListaUsuarios(); });
+    function renderListaUsuarios(){
+      if(!listaEl) return;
+      const entries = Object.entries(_usuariosCache || {});
+      const filtrados = entries.filter(([uid,u])=> !_filtroUsuario || (u.email||'').toLowerCase().includes(_filtroUsuario));
+      if(!entries.length){ listaEl.innerHTML = '<p style="font-size:12px;color:#94a3b8">Nenhum usuário salvo em <b>usuarios</b> no Firebase ainda.</p>'; if(vaziaEl) vaziaEl.style.display='none'; return; }
+      if(!filtrados.length){ listaEl.innerHTML=''; if(vaziaEl) vaziaEl.style.display='block'; return; }
+      if(vaziaEl) vaziaEl.style.display='none';
+      listaEl.innerHTML = filtrados.map(([uid,u])=>{
+        const role = u.role || 'operador';
+        const perm = u.permissoes || {injecao:true,tampografia:true,saida:true};
+        const isAdm = role==='admin';
+        const isEu = firebase.auth().currentUser && firebase.auth().currentUser.uid===uid;
+        const ck = (id,checked,disabled,label)=> '<label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#334155;cursor:pointer"><input type="checkbox" data-perm="'+id+'" data-uid="'+uid+'" '+(checked?'checked':'')+' '+(disabled?'disabled':'')+' style="width:14px;height:14px;accent-color:#1e2f44" /> '+label+'</label>';
+        return '<div data-user-row="'+uid+'" style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#f8fafc">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:12px;font-weight:700;color:#0f172a;word-break:break-all">'+(u.email||uid)+'</span>'
+          + (isEu ? '<span style="background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:9px;font-weight:800">VOCÊ</span>' : '')
+          + '<select data-role="'+uid+'" style="margin-left:auto;height:32px;padding:0 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;font-weight:700;background:white"><option value="operador" '+(role==='operador'?'selected':'')+'>OPERADOR</option><option value="admin" '+(role==='admin'?'selected':'')+'>ADMIN</option></select></div>'
+          + '<div data-perm-row style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;opacity:'+(isAdm?'0.45':'1')+'">' + ck('injecao', isAdm?true:!!perm.injecao, isAdm, 'INJEÇÃO') + ck('tampografia', isAdm?true:!!perm.tampografia, isAdm, 'TAMPOGRAFIA') + ck('saida', isAdm?true:!!perm.saida, isAdm, 'SAÍDA') + '</div>'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-top:10px"><button type="button" data-salvar="'+uid+'" style="height:32px;padding:0 14px;border-radius:8px;background:#1e2f44;color:white;font-weight:800;font-size:11px;letter-spacing:.04em;border:none;cursor:pointer">SALVAR</button><span data-status="'+uid+'" style="font-size:11px;color:#64748b"></span></div>'
+          + '</div>';
+      }).join('');
+      listaEl.querySelectorAll('[data-role]').forEach(sel=>{
+        sel.addEventListener('change', ()=>{
+          const row = listaEl.querySelector('[data-user-row="'+sel.dataset.role+'"]');
+          const isAdm = sel.value==='admin';
+          row.querySelectorAll('[data-perm]').forEach(c=>{ c.disabled=isAdm; if(isAdm) c.checked=true; });
+          const permDiv = row.querySelector('[data-perm-row]'); if(permDiv) permDiv.style.opacity = isAdm ? .45 : 1;
+        });
+      });
+      listaEl.querySelectorAll('[data-salvar]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const uid = btn.dataset.salvar;
+          const row = listaEl.querySelector('[data-user-row="'+uid+'"]');
+          const status = listaEl.querySelector('[data-status="'+uid+'"]');
+          const novoRole = row.querySelector('[data-role]').value;
+          const isEu = firebase.auth().currentUser && firebase.auth().currentUser.uid===uid;
+          if(isEu && novoRole!=='admin' && !confirm('Você está rebaixando a SI MESMO para Operador. Vai perder o acesso a USUÁRIOS. Continuar?')) return;
+          const novaPerm = novoRole==='admin' ? {injecao:true,tampografia:true,saida:true} : {injecao:!!row.querySelector('[data-perm="injecao"]').checked, tampografia:!!row.querySelector('[data-perm="tampografia"]').checked, saida:!!row.querySelector('[data-perm="saida"]').checked};
+          btn.disabled=true; btn.textContent='Salvando...'; if(status) status.textContent='';
+          try{
+            await firebase.database().ref('usuarios/' + uid).update({ role: novoRole, permissoes: novaPerm, alteradoPor: firebase.auth().currentUser ? firebase.auth().currentUser.email : 'admin', alteradoEm: new Date().toISOString() });
+            if(status){ status.textContent='✅ Salvo! Vale no próximo login do usuário.'; status.style.color='#166534'; }
+          }catch(err){ if(status){ status.textContent='❌ Erro: '+(err.message||err); status.style.color='#991b1b'; } }
+          finally{ btn.disabled=false; btn.textContent='SALVAR'; }
+        });
+      });
+    }
+    try{ firebase.database().ref('usuarios').on('value', snap=>{ _usuariosCache = snap.val() || {}; renderListaUsuarios(); }); }
+    catch(e){ if(listaEl) listaEl.innerHTML='<p style="font-size:12px;color:#991b1b">Não foi possível carregar a lista de usuários.</p>'; }
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const email = emailEl.value.trim().toLowerCase();
@@ -291,9 +356,11 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
         
         // Salva role no Realtime Database
         try{
+          const permissoes = role==='admin' ? {injecao:true,tampografia:true,saida:true} : {injecao: !!document.getElementById('perm-injecao')?.checked, tampografia: !!document.getElementById('perm-tampografia')?.checked, saida: !!document.getElementById('perm-saida')?.checked};
           await firebase.database().ref('usuarios/' + cred.user.uid).set({
             email: email,
             role: role,
+            permissoes: permissoes,
             criadoPor: firebase.auth().currentUser ? firebase.auth().currentUser.email : 'admin',
             criadoEm: new Date().toISOString()
           });
@@ -393,6 +460,22 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
               }
               return;
             }
+            // PERMISSÕES DE MOVIMENTAÇÃO: esconde aba sem acesso (INJEÇÃO / TAMPOGRAFIA / SAÍDA)
+            const perm = window._permissoes || {injecao:true,tampografia:true,saida:true};
+            const cardMov = btn.closest('div.bg-white.rounded-xl');
+            const h2Mov = cardMov && cardMov.querySelector('h2');
+            if(h2Mov && h2Mov.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')){
+              const mapa = {'INJEÇÃO':'injecao','INJECAO':'injecao','TAMPOGRAFIA':'tampografia','SAÍDA':'saida','SAIDA':'saida'};
+              const chave = mapa[combined.trim()];
+              if(chave && !perm[chave]){ btn.style.display='none'; btn.disabled=true; btn.setAttribute('data-blocked-operador','true'); return; }
+              if(chave && perm[chave]) return; // aba liberada
+              // Botão CONFIRMAR: bloqueia se o tipo atual não for permitido
+              if(combined.includes('CONFIRMAR')){
+                const tipoAtual = combined.includes('INJEÇÃO') ? 'injecao' : combined.includes('TAMPOGRAFIA') ? 'tampografia' : combined.includes('SAÍDA') || combined.includes('SAIDA') ? 'saida' : null;
+                if(tipoAtual && !perm[tipoAtual]){ btn.style.display='none'; btn.disabled=true; btn.setAttribute('data-blocked-operador','true'); }
+                return;
+              }
+            }
             // WHITELIST - REGISTRAR MOVIMENTAÇÃO SEMPRE LIBERADO
             if(combined.includes('REGISTRAR') && combined.includes('MOVIMENT')) return;
             if(combined.includes('CONFIRMAR')) return; // botão confirmar movimentação
@@ -439,6 +522,25 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
               });
             }
           });
+          // 2c. Se a aba atual de movimentação está bloqueada, clica na primeira aba liberada
+          (function(){
+            const perm = window._permissoes || {injecao:true,tampografia:true,saida:true};
+            document.querySelectorAll('div.bg-white.rounded-xl').forEach(card=>{
+              const h2 = card.querySelector('h2');
+              if(!h2 || !h2.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')) return;
+              const botoes = Array.from(card.querySelectorAll('button'));
+              const abas = botoes.filter(b=>['INJEÇÃO','TAMPOGRAFIA','SAÍDA'].includes((b.textContent||'').trim().toUpperCase()));
+              if(!abas.length) return;
+              const visiveis = abas.filter(b=>b.style.display!=='none');
+              // Se nenhuma aba visível (ex: todas bloqueadas exceto lógica), não faz nada
+              if(!visiveis.length) return;
+              const confirmar = botoes.find(b=>(b.textContent||'').toUpperCase().includes('CONFIRMAR'));
+              if(confirmar && confirmar.style.display==='none'){
+                const primeira = visiveis[0];
+                if(primeira) primeira.click();
+              }
+            });
+          })();
           // 3. Desabilita form de ordem
           document.querySelectorAll('form').forEach(form=>{
             if(form.getAttribute('data-hidden-operador')) return;
@@ -467,7 +569,7 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
           badge.style.cssText='display:inline-flex;padding:2px 8px;border-radius:9999px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);font-size:10px;font-weight:700;letter-spacing:.05em;margin-left:8px';
           const userDisplay=document.getElementById('user-email-display'); if(userDisplay) userDisplay.appendChild(badge);
         }
-        if(badge) badge.textContent='OPERADOR';
+        if(badge){ const p = window._permissoes || {injecao:true,tampografia:true,saida:true}; const libs = []; if(p.injecao) libs.push('INJ'); if(p.tampografia) libs.push('TAMP'); if(p.saida) libs.push('SAÍDA'); badge.textContent = 'OPERADOR • ' + (libs.length ? libs.join(' + ') : 'SEM MOVIMENTAÇÃO'); }
       } else {
         window._bloquearCriacaoEdicaoOrdem = false;
         if(window._operadorObserver) window._operadorObserver.disconnect();
@@ -490,11 +592,15 @@ Tentativa: ${v}`);if(Z.tampografia+v>T.meta)return alert(`Meta de Tampografia ex
     let isAdmin = isAdminEmail(email);
     
     // Também verifica role salva no DB
+    // Carrega role + permissões de movimentação salvas no cadastro
     try{
-      const snap = await firebase.database().ref('usuarios/' + user.uid + '/role').once('value');
-      const role = snap.val();
-      if(role==='admin') isAdmin = true;
-    }catch(e){}
+      const snap = await firebase.database().ref('usuarios/' + user.uid).once('value');
+      const dados = snap.val() || {};
+      if(dados.role==='admin') isAdmin = true;
+      // Admin: tudo liberado. Operador sem permissoes salvas (usuário antigo): tudo liberado p/ não travar.
+      window._permissoes = isAdmin ? {injecao:true,tampografia:true,saida:true}
+        : (dados.permissoes || {injecao:true,tampografia:true,saida:true});
+    }catch(e){ window._permissoes = {injecao:true,tampografia:true,saida:true}; }
     applyRolePermissions(isAdmin, email);
   });
 })();
