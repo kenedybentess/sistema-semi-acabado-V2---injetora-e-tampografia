@@ -262,17 +262,17 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
     if(document.getElementById('admin-users-panel')) return;
     const panel = document.createElement('div');
     panel.id = 'admin-users-panel';
-    panel.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999999;background:rgba(15,23,42,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;font-family:system-ui';
+    panel.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999999;background:rgba(15,23,42,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:16px;font-family:system-ui;overflow-y:auto;-webkit-overflow-scrolling:touch';
     panel.innerHTML = `
-      <div style="width:100%;max-width:480px;background:white;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5)">
-        <div style="background:#1e2f44;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">
+      <div style="width:100%;max-width:480px;background:white;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;margin:auto">
+        <div style="background:#1e2f44;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
           <div>
             <h2 style="color:white;font-weight:800;font-size:14px;letter-spacing:.04em">GERENCIAR USUÁRIOS</h2>
             <p style="color:rgba(255,255,255,.6);font-size:11px;margin-top:2px">Apenas administradores</p>
           </div>
           <button id="close-admin-panel" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.1);border:none;color:white;cursor:pointer;font-size:18px">×</button>
         </div>
-        <div style="padding:24px">
+        <div style="padding:24px;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch">
           <div id="admin-msg" style="display:none;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:16px"></div>
           
           <form id="create-user-form" onsubmit="return false" style="display:flex;flex-direction:column;gap:14px">
@@ -301,12 +301,12 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
             <button id="btn-create-user" type="submit" style="width:100%;height:46px;border-radius:10px;background:#1e2f44;color:white;font-weight:800;font-size:12px;letter-spacing:.06em;border:none;cursor:pointer">CRIAR USUÁRIO</button>
           </form>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9">
-            <h3 style="font-size:11px;font-weight:700;color:#334155;letter-spacing:.06em;margin-bottom:10px">USUÁRIOS ADMINISTRADORES ATUAIS</h3>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span> jessica.nascimento@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
-              <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;font-size:12px"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span> kenedy.santos@elgin.com.br <span style="margin-left:auto;background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px">ADMIN</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <h3 style="font-size:11px;font-weight:700;color:#334155;letter-spacing:.06em">USUÁRIOS CADASTRADOS <span id="admin-users-count" style="background:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:10px"></span></h3>
+              <button id="btn-refresh-users" type="button" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:11px;font-weight:700;color:#334155;cursor:pointer">↻ ATUALIZAR</button>
             </div>
-            <p style="font-size:10px;color:#94a3b8;margin-top:10px">Outros usuários são Operadores por padrão. Para tornar alguém admin, crie com tipo Administrador ou adicione o e-mail no código.</p>
+            <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding-right:2px"><p style="font-size:12px;color:#94a3b8">Carregando usuários...</p></div>
+            <p style="font-size:10px;color:#94a3b8;margin-top:10px">Lista lida do Firebase em <b>usuarios/</b>. Clique em <b>EDITAR</b> para mudar o tipo e as permissões. A mudança vale no próximo login do usuário.</p>
           </div>
         </div>
       </div>
@@ -323,6 +323,37 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
     const permBox = document.getElementById('perm-box');
     const syncPermBox = ()=>{ const isAdm = roleEl.value==='admin'; if(permBox){ permBox.style.opacity = isAdm ? .45 : 1; permBox.style.pointerEvents = isAdm ? 'none' : 'auto'; } };
     roleEl.addEventListener('change', syncPermBox); syncPermBox();
+    // ---- LISTA DINAMICA + EDITAR PERMISSOES (Firebase: usuarios/<uid>) ----
+    const usersListEl = document.getElementById('admin-users-list');
+    const usersCountEl = document.getElementById('admin-users-count');
+    const btnRefreshUsers = document.getElementById('btn-refresh-users');
+    function escHtml(s){ return String(s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function meuEmailAtual(){ return (firebase.auth().currentUser && firebase.auth().currentUser.email||'').toLowerCase(); }
+    const PERM_LABELS = {injecao:'INJEÇÃO', tampografia:'TAMPOGRAFIA', saida:'SAÍDA', refugo:'REFUGO'};
+    function permsTxt(u, isAdm){ var perms=u.permissoes||{}; if(isAdm) return 'Acesso total'; var on=['injecao','tampografia','saida','refugo'].filter(function(k){return perms[k];}).map(function(k){return PERM_LABELS[k];}); return on.length?on.join(' • '):'Sem permissões de movimentação'; }
+    function findEditBox(idx){ var els=usersListEl.querySelectorAll('[data-edit-box]'); for(var i=0;i<els.length;i++){ if(els[i].getAttribute('data-edit-box')===String(idx)) return els[i]; } return null; }
+    async function carregarUsuarios(){
+      if(!usersListEl) return; usersListEl.innerHTML='<p style="font-size:12px;color:#94a3b8">Carregando usuários...</p>';
+      try{
+        const snap=await firebase.database().ref('usuarios').once('value'); const dados=snap.val()||{};
+        ADMIN_EMAILS.forEach(function(em){ var ja=Object.values(dados).some(function(u){return (u&&u.email||'').toLowerCase()===em;}); if(!ja) dados['fixo-'+em]={email:em,role:'admin',permissoes:{injecao:true,tampografia:true,saida:true,refugo:true},fixo:true}; });
+        const lista=Object.keys(dados).map(function(uid){return {uid:uid,d:dados[uid]||{}};}).filter(function(x){return x.d.email;}).sort(function(a,b){return (a.d.email||'').localeCompare(b.d.email||'');});
+        if(usersCountEl) usersCountEl.textContent=lista.length+(lista.length===1?' usuário':' usuários');
+        if(!lista.length){ usersListEl.innerHTML='<p style="font-size:12px;color:#94a3b8">Nenhum usuário encontrado em <b>usuarios/</b>.</p>'; return; }
+        usersListEl.innerHTML=lista.map(function(x,idx){ var u=x.d,isAdm=(u.role||'').toLowerCase()==='admin'||ADMIN_EMAILS.includes((u.email||'').toLowerCase()); var isEu=(u.email||'').toLowerCase()===meuEmailAtual();
+          var badge=isAdm?'<span style="background:#1e2f44;color:white;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:700">ADMIN</span>':'<span style="background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:700">OPERADOR</span>';
+          var editBtn=u.fixo?'<span style="font-size:10px;color:#94a3b8">fixo no código</span>':'<button type="button" data-edit-idx="'+idx+'" style="height:26px;padding:0 10px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;cursor:pointer">EDITAR</button>';
+          var delBtn=(u.fixo||isEu)?'':'<button type="button" data-del-idx="'+idx+'" style="height:26px;padding:0 10px;border-radius:8px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;font-size:11px;font-weight:700;cursor:pointer">EXCLUIR</button>';
+          return '<div style="background:'+(isAdm?'#f0fdf4':'#f8fafc')+';border:1px solid '+(isAdm?'#bbf7d0':'#e2e8f0')+';padding:10px 12px;border-radius:10px;font-size:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%;flex-shrink:0"></span><div style="min-width:0"><div style="font-weight:700;color:#1e293b;word-break:break-all">'+escHtml(u.email)+(isEu?' <span style="font-size:10px;color:#94a3b8">(você)</span>':'')+'</div><div style="font-size:10px;color:#94a3b8">'+escHtml(permsTxt(u,isAdm))+(u.criadoEm?' • desde '+new Date(u.criadoEm).toLocaleDateString('pt-BR'):'')+'</div></div><span style="margin-left:auto;display:flex;align-items:center;gap:8px">'+badge+editBtn+delBtn+'</span></div><div data-edit-box="'+idx+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0"></div></div>'; }).join('');
+        usersListEl.querySelectorAll('[data-edit-idx]').forEach(function(b){ b.addEventListener('click', function(){ var idx=parseInt(b.getAttribute('data-edit-idx'),10); var item=lista[idx]; if(!item) return; var u=item.d,uid=item.uid; var box=findEditBox(idx); if(!box) return; var aberto=box.style.display!=='none'; usersListEl.querySelectorAll('[data-edit-box]').forEach(function(el){el.style.display='none';el.innerHTML='';}); if(aberto) return; var perms=u.permissoes||{}; var isAdm=(u.role||'').toLowerCase()==='admin';
+          box.innerHTML='<label style="font-size:10px;font-weight:700;letter-spacing:.06em;color:#334155;display:block;margin-bottom:6px">TIPO DE ACESSO</label><select data-edit-role style="width:100%;height:38px;padding:0 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;background:white;margin-bottom:10px"><option value="operador"'+(!isAdm?' selected':'')+'>Operador</option><option value="admin"'+(isAdm?' selected':'')+'>Administrador - acesso total</option></select><label style="font-size:10px;font-weight:700;letter-spacing:.06em;color:#334155;display:block;margin-bottom:8px">PERMISSÕES • REGISTRAR MOVIMENTAÇÃO</label>'+['injecao','tampografia','saida','refugo'].map(function(k){ return '<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;cursor:pointer;background:white"><input data-edit-perm="'+k+'" type="checkbox" '+(perms[k]?'checked':'')+' style="width:16px;height:16px;accent-color:#1e2f44" /> <span style="font-size:12px;font-weight:700;color:#334155">'+PERM_LABELS[k]+'</span></label>'; }).join('')+'<div style="display:flex;gap:8px;margin-top:4px"><button type="button" data-edit-save style="flex:1;height:38px;border-radius:8px;background:#1e2f44;color:white;font-weight:800;font-size:11px;letter-spacing:.05em;border:none;cursor:pointer">SALVAR</button><button type="button" data-edit-cancel style="height:38px;padding:0 14px;border-radius:8px;border:1px solid #e2e8f0;background:white;font-size:11px;font-weight:700;cursor:pointer">CANCELAR</button></div>';
+          box.style.display='block'; var roleSel=box.querySelector('[data-edit-role]'); var syncEditPerms=function(){ var adm=roleSel.value==='admin'; box.querySelectorAll('[data-edit-perm]').forEach(function(cb){cb.disabled=adm; if(adm) cb.checked=true;}); }; roleSel.addEventListener('change',syncEditPerms); syncEditPerms();
+          box.querySelector('[data-edit-cancel]').addEventListener('click',function(){box.style.display='none';box.innerHTML='';});
+          box.querySelector('[data-edit-save]').addEventListener('click', async function(){ var novoRole=roleSel.value; var souEu=(u.email||'').toLowerCase()===meuEmailAtual(); if(souEu&&novoRole!=='admin'){ alert('Você não pode rebaixar a si mesmo para Operador. Peça para outro admin fazer isso.'); return; } var novasPerms={}; box.querySelectorAll('[data-edit-perm]').forEach(function(cb){novasPerms[cb.getAttribute('data-edit-perm')]=!!cb.checked;}); if(novoRole==='admin') novasPerms={injecao:true,tampografia:true,saida:true,refugo:true}; var saveBtn=box.querySelector('[data-edit-save]'); saveBtn.disabled=true; saveBtn.textContent='Salvando...'; try{ await firebase.database().ref('usuarios/'+uid).update({role:novoRole,permissoes:novasPerms}); showMsg('✅ Permissões atualizadas: '+u.email+' → '+novoRole.toUpperCase(),true); carregarUsuarios(); }catch(e){ showMsg('Erro ao salvar: '+(e.message||e),false); saveBtn.disabled=false; saveBtn.textContent='SALVAR'; } }); }); });
+        usersListEl.querySelectorAll('[data-del-idx]').forEach(function(b){ b.addEventListener('click', async function(){ var idx=parseInt(b.getAttribute('data-del-idx'),10); var item=lista[idx]; if(!item) return; if(!confirm('Excluir o cadastro de '+item.d.email+'?')) return; try{ await firebase.database().ref('usuarios/'+item.uid).remove(); showMsg('Cadastro removido: '+item.d.email,true); carregarUsuarios(); }catch(e){ showMsg('Erro ao excluir: '+(e.message||e),false); } }); });
+      }catch(e){ console.error('Erro ao carregar usuarios',e); usersListEl.innerHTML='<p style="font-size:12px;color:#991b1b">Não foi possível ler <b>usuarios/</b>: '+escHtml(e.message||e)+'</p>'; }
+    }
+    window._carregarUsuarios=carregarUsuarios; if(btnRefreshUsers) btnRefreshUsers.addEventListener('click',carregarUsuarios); carregarUsuarios();
     const btn = document.getElementById('btn-create-user');
     function showMsg(text, ok){
       msgEl.style.display='block';
@@ -360,6 +391,7 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
         // Se criou via secondary, faz signOut do secondary
         if(secondaryApp) await secondaryApp.auth().signOut();
         showMsg('✅ Usuário criado com sucesso: ' + email + ' como ' + role.toUpperCase(), true);
+        if(typeof carregarUsuarios==='function') carregarUsuarios();
         emailEl.value = '';
         passEl.value = '';
       }catch(err){
@@ -395,6 +427,7 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
           adminBtn.onclick = ()=>{
             createAdminPanel();
             document.getElementById('admin-users-panel').style.display='flex';
+            if(window._carregarUsuarios) window._carregarUsuarios();
           };
           histBtn.parentNode.insertBefore(adminBtn, histBtn);
         }
@@ -462,18 +495,19 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
               return;
             }
             // PERMISSÕES DE MOVIMENTAÇÃO: esconde aba sem acesso (INJEÇÃO / TAMPOGRAFIA / SAÍDA)
-            const perm = {...(window._permissoes || {injecao:true,tampografia:true,saida:true,refugo:true}), tampografia:true};
+            const perm = {...(window._permissoes || {injecao:true,tampografia:true,saida:true,refugo:true})};
             const cardMov = btn.closest('div.bg-white.rounded-xl');
             const h2Mov = cardMov && cardMov.querySelector('h2');
             if(h2Mov && h2Mov.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')){
               const mapa = {'INJEÇÃO':'injecao','INJECAO':'injecao','TAMPOGRAFIA':'tampografia','SAÍDA':'saida','SAIDA':'saida','REFUGO':'refugo'};
               const chave = mapa[combined.trim()];
               if(chave && !perm[chave]){ btn.style.display='none'; btn.disabled=true; btn.setAttribute('data-blocked-operador','true'); return; }
-              if(chave && perm[chave]) return; // aba liberada
+              if(chave && perm[chave]){ btn.style.display=''; btn.disabled=false; btn.style.pointerEvents=''; btn.removeAttribute('data-blocked-operador'); return; }
               // Botão CONFIRMAR: bloqueia se o tipo atual não for permitido
               if(combined.includes('CONFIRMAR')){
                 const tipoAtual = combined.includes('INJEÇÃO') ? 'injecao' : combined.includes('TAMPOGRAFIA') ? 'tampografia' : combined.includes('SAÍDA') || combined.includes('SAIDA') ? 'saida' : combined.includes('REFUGO') ? 'refugo' : null;
                 if(tipoAtual && !perm[tipoAtual]){ btn.style.display='none'; btn.disabled=true; btn.setAttribute('data-blocked-operador','true'); }
+                else if(tipoAtual && perm[tipoAtual]){ btn.style.display=''; btn.disabled=false; btn.style.pointerEvents=''; btn.removeAttribute('data-blocked-operador'); }
                 return;
               }
             }
@@ -526,7 +560,7 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
           // 2c. Se a aba atual esta bloqueada, clica UMA VEZ na primeira aba liberada (sem loop)
           (function(){
             if(window._abaCorrigida) return;
-            const perm = {...(window._permissoes || {injecao:true,tampografia:true,saida:true,refugo:true}), tampografia:true};
+            const perm = {...(window._permissoes || {injecao:true,tampografia:true,saida:true,refugo:true})};
             document.querySelectorAll('div.bg-white.rounded-xl').forEach(card=>{
               const h2 = card.querySelector('h2');
               if(!h2 || !h2.textContent.toUpperCase().includes('REGISTRAR MOVIMENTA')) return;
@@ -536,7 +570,7 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
               const visiveis = abas.filter(b=>b.style.display!=='none');
               if(!visiveis.length) return;
               const confirmar = botoes.find(b=>(b.textContent||'').toUpperCase().includes('CONFIRMAR'));
-              if(confirmar && confirmar.style.display==='none' && visiveis[0]){
+              if(confirmar && (confirmar.style.display==='none' || confirmar.hasAttribute('data-blocked-operador')) && visiveis[0]){
                 window._abaCorrigida = true;
                 visiveis[0].click();
               }
@@ -600,7 +634,7 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
       if(dados.role==='admin') isAdmin = true;
       // Admin: tudo liberado. Operador sem permissoes salvas (usuário antigo): tudo liberado p/ não travar.
       window._permissoes = isAdmin ? {injecao:true,tampografia:true,saida:true,refugo:true}
-        : ((dados.permissoes && Object.keys(dados.permissoes).length) ? {...dados.permissoes, tampografia:true, refugo: 'refugo' in dados.permissoes ? dados.permissoes.refugo : true} : {injecao:true,tampografia:true,saida:true,refugo:true});
+        : ((dados.permissoes && Object.keys(dados.permissoes).length) ? { injecao: ('injecao' in dados.permissoes) ? !!dados.permissoes.injecao : true, tampografia: ('tampografia' in dados.permissoes) ? !!dados.permissoes.tampografia : true, saida: ('saida' in dados.permissoes) ? !!dados.permissoes.saida : true, refugo: ('refugo' in dados.permissoes) ? !!dados.permissoes.refugo : true } : {injecao:true,tampografia:true,saida:true,refugo:true});
     }catch(e){ window._permissoes = {injecao:true,tampografia:true,saida:true,refugo:true}; }
     applyRolePermissions(isAdmin, email);
   });
@@ -1255,31 +1289,48 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
     }
   }
   setInterval(envolverImprimir, 500); envolverImprimir();
-  function lerFormulario(form){
-    var dados = { tipo:'', ordem:'', qtd:'', lote:'', ope:'', revisor:'', fornecedor:'' };
-    if(!form) return dados;
-    // Aba ativa = tipo da movimentacao
-    form.querySelectorAll('button').forEach(function(b){
+  function lerFormulario(container){
+    var dados = { tipo:'', ordem:'', qtd:'', lote:'', ope:'', revisor:'', fornecedor:'', produto:'', cod:'' };
+    if(!container) return dados;
+    var card = container;
+    var botoes = Array.prototype.slice.call(card.querySelectorAll('button'));
+    var tipos = ['INJEÇÃO','INJECAO','TAMPOGRAFIA','SAÍDA','SAIDA'];
+    botoes.forEach(function(b){
       var txt=(b.textContent||'').trim().toUpperCase();
-      if(['INJEÇÃO','INJECAO'].includes(txt)) dados.tipo='INJEÇÃO';
-      if(txt==='TAMPOGRAFIA') dados.tipo='TAMPOGRAFIA';
-      if(txt==='SAÍDA'||txt==='SAIDA') dados.tipo='SAÍDA';
+      if(tipos.indexOf(txt)<0) return;
+      var cls = b.className||'';
+      if(/primary/.test(cls) || b.getAttribute('aria-pressed')==='true'){ dados.tipo = (txt==='INJECAO'?'INJEÇÃO':txt==='SAIDA'?'SAÍDA':txt); }
     });
-    // Campos: le por placeholder / ordem dos inputs do form
-    var inputs = Array.prototype.slice.call(form.querySelectorAll('input,select,textarea'));
-    inputs.forEach(function(inp){
-      var ph=(inp.placeholder||'').toUpperCase();
-      var val=(inp.value||'').trim();
-      if(!val) return;
-      if(ph.indexOf('OP')>=0 || ph.indexOf('ORDEM')>=0) dados.ordem = val;
-      else if(ph==='100' || /^\d+$/.test(val) && !dados.qtd) dados.qtd = val;
-      else if(ph.indexOf('LOTE')>=0) dados.lote = val;
-      else if(ph.indexOf('OPE')>=0 || ph.indexOf('OP-')>=0) dados.ope = val;
-      else if(ph.indexOf('REVISOR')>=0) dados.revisor = val;
-      else if(ph.indexOf('FORNECEDOR')>=0) dados.fornecedor = val;
+    if(!dados.tipo){
+      var h2 = card.querySelector('h2');
+      var topo = h2 ? h2.parentElement.textContent.toUpperCase() : '';
+      if(topo.indexOf('TAMPOGRAFIA')>=0) dados.tipo='TAMPOGRAFIA';
+      else if(topo.indexOf('SAÍDA')>=0||topo.indexOf('SAIDA')>=0) dados.tipo='SAÍDA';
+      else if(topo.indexOf('INJE')>=0) dados.tipo='INJEÇÃO';
+    }
+    var spans = Array.prototype.slice.call(card.querySelectorAll('span,div,p'));
+    for(var i=0;i<spans.length;i++){
+      var t=(spans[i].textContent||'').trim();
+      if(/AUT\d+/.test(t) && t.length<120){ dados.produto=t; var mCod=t.match(/(AUT\d+|SA-\d+|EX:[^\s•]+)/); if(mCod) dados.cod=mCod[1]; break; }
+    }
+    var campos = Array.prototype.slice.call(card.querySelectorAll('input,select,textarea'));
+    campos.forEach(function(inp){
+      var val=(inp.value||'').trim(); if(!val) return;
+      var rotulo='';
+      var wrap = inp.closest('div');
+      if(wrap){ var lab = wrap.querySelector('label'); if(lab) rotulo=(lab.textContent||'').toUpperCase(); }
+      if(!rotulo && inp.previousElementSibling) rotulo=(inp.previousElementSibling.textContent||'').toUpperCase();
+      var chave = rotulo || (inp.placeholder||'').toUpperCase();
+      if(chave.indexOf('QTD')>=0 || chave.indexOf('QUANT')>=0) dados.qtd=val;
+      else if(chave.indexOf('OPE')>=0) dados.ope=val;
+      else if(chave.indexOf('LOTE')>=0) dados.lote=val;
+      else if(chave.indexOf('REVISOR')>=0) dados.revisor=val;
+      else if(chave.indexOf('FORNECEDOR')>=0) dados.fornecedor=val;
+      else if(chave.indexOf('ORDEM')>=0 || chave.indexOf('OP)')>=0 || inp.tagName==='SELECT') dados.ordem=val;
     });
-    // Fallback pela posicao: os inputs do form sao [ordem?, qtd, lote?, ope, revisor?, fornecedor?]
-    // Se qtd/ope ainda vazios, usa os valores na ordem em que aparecem
+    if(!dados.ordem){ var sel=card.querySelector('select'); if(sel && sel.value) dados.ordem=sel.value; }
+    if(!dados.qtd){ var nums=Array.prototype.slice.call(card.querySelectorAll('input')); for(var k=0;k<nums.length;k++){ if(/^\d+$/.test((nums[k].value||'').trim())){ dados.qtd=nums[k].value.trim(); break; } } }
+    if(!dados.ope){ var txts=Array.prototype.slice.call(card.querySelectorAll('input[type="text"],input:not([type])')); for(var k2=0;k2<txts.length;k2++){ var v=(txts[k2].value||'').trim(); if(v && v!==dados.qtd && !/^\d+$/.test(v)){ dados.ope=v; break; } } }
     return dados;
   }
   function dadosAtuais(){
@@ -1289,21 +1340,18 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
   }
   function imprimirComprovante(){
     var m = dadosAtuais();
-    // Se ainda nao houve confirmacao, usa o que esta preenchido no formulario agora
     if(!m){
-      var form = document.querySelector('form');
-      // procura o form que contem o botao CONFIRMAR
-      document.querySelectorAll('form').forEach(function(f){ if((f.textContent||'').toUpperCase().indexOf('CONFIRMAR')>=0) form=f; });
-      var d = lerFormulario(form);
+      var btnImp = document.getElementById('btn-imprimir-mov');
+      var card = null;
+      if(btnImp){ var el=btnImp; for(var i=0;i<10 && el;i++){ el=el.parentElement; if(el && el.querySelector && el.querySelector('h2') && (el.textContent||'').toUpperCase().indexOf('REGISTRAR MOVIMENTA')>=0){ card=el; break; } } }
+      if(!card){
+        document.querySelectorAll('h2').forEach(function(h2){ if((h2.textContent||'').toUpperCase().indexOf('REGISTRAR MOVIMENTA')>=0 && !card){ var a=h2; for(var j=0;j<8 && a;j++){ a=a.parentElement; if(a && a.className && /rounded/.test(String(a.className))){ card=a; break; } } } });
+      }
+      var d = lerFormulario(card);
       if(!d.qtd && !d.ordem && !d.ope){ alert('Confirme uma movimentação primeiro para imprimir o comprovante.'); return; }
-      m = { tipo:d.tipo, ordemId:d.ordem, qtd:d.qtd, lote:d.lote, ope:d.ope, revisor:d.revisor, fornecedor:d.fornecedor, data:new Date().toISOString() };
+      m = { tipo:d.tipo, ordemId:d.ordem, cod:d.cod, produto:d.produto, qtd:d.qtd, lote:d.lote, ope:d.ope, revisor:d.revisor, fornecedor:d.fornecedor, data:new Date().toISOString() };
     }
-    // INJECAO / TAMPOGRAFIA: reusa a etiqueta padrao do sistema (mesma da confirmacao automatica)
-    if(['INJECAO','TAMPOGRAFIA'].includes((m.tipo||'').toUpperCase()) && window._imprimirEtiqueta){
-      // _imprimirEtiqueta espera o objeto do movimento; passa o ultimo guardado
-      window._imprimirEtiqueta(m); return;
-    }
-    // SAIDA: comprovante simples em janela de impressao
+    if(['INJECAO','TAMPOGRAFIA'].includes((m.tipo||'').toUpperCase()) && window._imprimirEtiqueta){ window._imprimirEtiqueta(m); return; }
     var data = m.data ? new Date(m.data).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
     var w = window.open('', '_blank');
     if(!w){ alert('Libere pop-ups para imprimir o comprovante.'); return; }
@@ -1333,11 +1381,11 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
     var txtBtn = (b.textContent||'').toUpperCase();
     if(txtBtn.indexOf('CONFIRMAR')<0) return;
     if(txtBtn.indexOf('REFUGO')>=0 || txtBtn.indexOf('BORRA')>=0) return;
-    var form = b.closest('form'); if(!form) return;
-    var d = lerFormulario(form);
+    var cardC = b.closest('div'); var tmp=b; for(var ci=0;ci<10 && tmp;ci++){ tmp=tmp.parentElement; if(tmp && tmp.querySelector && tmp.querySelector('h2') && (tmp.textContent||'').toUpperCase().indexOf('REGISTRAR MOVIMENTA')>=0){ cardC=tmp; break; } }
+    var d = lerFormulario(cardC);
     // So guarda se houver dados validos (evita guardar clique com form vazio/invalido)
     if(d.qtd || d.ordem){
-      window._ultimaMovimentacao = { tipo:d.tipo, ordemId:d.ordem, qtd:parseInt(d.qtd)||d.qtd, lote:d.lote, ope:d.ope, revisor:d.revisor, fornecedor:d.fornecedor, data:new Date().toISOString() };
+      window._ultimaMovimentacao = { tipo:d.tipo, ordemId:d.ordem, cod:d.cod, produto:d.produto, qtd:parseInt(d.qtd)||d.qtd, lote:d.lote, ope:d.ope, revisor:d.revisor, fornecedor:d.fornecedor, data:new Date().toISOString() };
       var btn = document.getElementById('btn-imprimir-mov');
       if(btn) btn.disabled = false;
     }
@@ -1376,6 +1424,155 @@ s("button",{type:"button",title:"Apagar a movimentação de vez",className:"h-6 
     });
   }
   injetar(); limparImprimirForaDaMovimentacao(); setTimeout(function(){ injetar(); limparImprimirForaDaMovimentacao(); }, 500); setTimeout(function(){ injetar(); limparImprimirForaDaMovimentacao(); }, 2000); setTimeout(function(){ injetar(); limparImprimirForaDaMovimentacao(); }, 5000);
+})();
+</script>
+
+<!-- ABAS: UMA INFORMACAO POR VEZ -->
+<style id="css-abas">
+#abas-principais{position:sticky;top:0;z-index:40;background:#1e2f44;padding:10px 12px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid rgba(255,255,255,.15)}
+#abas-principais::-webkit-scrollbar{display:none}
+.aba-btn{flex:1 0 auto;min-width:125px;white-space:nowrap;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;border-radius:9999px;padding:10px 12px;font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;text-transform:uppercase}
+.aba-btn small{display:block;font-weight:600;font-size:10px;opacity:.75;letter-spacing:.02em;text-transform:none}
+.aba-btn.ativa{background:#fff;color:#1e2f44;border-color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.aba-btn.ativa small{opacity:.7}
+@media(max-width:640px){.aba-btn{min-width:125px;padding:9px 10px}}
+#btn-topo-borra{display:none !important}
+</style>
+<script>
+(function(){
+  var CONTENT=['cadastro','ordens','mov','estoque'];
+  var TABS=[
+    {id:'cadastro', rotulo:'CADASTRO', sub:'Produtos', match:['CADASTRO DE PRODUTOS']},
+    {id:'ordens', rotulo:'ORDENS', sub:'Ordens de producao', match:['ORDENS DE PRODU']},
+    {id:'mov', rotulo:'MOVIMENTACOES', sub:'Registrar movimentacao', match:['REGISTRAR MOVIMENTA']},
+    {id:'estoque', rotulo:'ESTOQUE ATUAL', sub:'Injecao vs Final', match:['ESTOQUE ATUAL']},
+    {id:'refugo', rotulo:'REFUGO', sub:'Registrar refugo', page:'refugo'},
+    {id:'historico', rotulo:'HISTORICO', sub:'Movimentacoes', page:'historico'},
+    {id:'borra', rotulo:'BORRA INJETORA', sub:'Borra da injetora', page:'borra'}
+  ];
+  var ativa = localStorage.getItem('aba_principal') || 'mov';
+  if(CONTENT.indexOf(ativa)<0 && ativa!=='refugo' && ativa!=='borra') ativa='mov';
+  var abaAnterior = (CONTENT.indexOf(ativa)>=0) ? ativa : 'mov';
+  function mainEl(){ return document.querySelector('#root main') || document.getElementById('root'); }
+  // A secao do refugo e do script da pagina em tela cheia (#refugo): as abas NUNCA tocam nela
+  // (nem nela, nem em nada dentro dela, nem em card que a contenha). Era isso que deixava a tela branca:
+  // o script do refugo mostrava a secao e o das abas escondia de novo, sem parar.
+  function eRefugo(el){
+    if(!el) return false;
+    if(el.id==='secao-refugo') return true;
+    if(el.closest && el.closest('#secao-refugo')) return true;
+    if(el.querySelector && el.querySelector('#secao-refugo')) return true;
+    return false;
+  }
+  function cardDe(el){
+    var cur=el; for(var i=0;i<8 && cur;i++){ cur=cur.parentElement; if(!cur) break; if(cur.className && /rounded/.test(String(cur.className))) return cur; } return el.closest('div');
+  }
+  function esconderBotoesDuplicados(){
+    document.querySelectorAll('header button').forEach(function(b){
+      var txt=(b.textContent||'').trim().toUpperCase();
+      if(txt==='HISTÓRICO' || txt==='HISTORICO'){
+        b.style.position='absolute'; b.style.visibility='hidden'; b.style.pointerEvents='none'; b.style.width='1px'; b.style.height='1px'; b.style.overflow='hidden';
+      } else if(txt==='REFUGO' || txt==='BORRA INJETORA'){
+        b.style.display='none';
+      }
+    });
+    var bb=document.getElementById('btn-topo-borra'); if(bb) bb.style.display='none';
+  }
+  function modalHistoricoAberto(){
+    var els=document.querySelectorAll('div');
+    for(var i=0;i<els.length;i++){
+      var el=els[i];
+      if(mainEl().contains(el)) continue;
+      if(!el.offsetParent) continue;
+      var t=(el.textContent||'');
+      if(t.indexOf('HIST')>=0 && t.length<8000 && el.querySelector('table')) return true;
+    }
+    return false;
+  }
+  function abrirHistorico(tentativa){
+    var btn=null;
+    document.querySelectorAll('header button').forEach(function(b){ if((b.textContent||'').trim().toUpperCase().indexOf('HIST')===0) btn=b; });
+    if(btn) btn.click();
+    // Se o modal nao abriu (clique nao pegou), tenta de novo uma vez
+    setTimeout(function(){
+      if(!modalHistoricoAberto() && (tentativa||0)<1) abrirHistorico(1);
+    }, 600);
+  }
+  // Fecha o modal do Historico (botao X dentro dele). Sem isso, trocar de aba
+  // deixava o modal por cima do conteudo novo e parecia que nada mudava.
+  function fecharHistorico(){
+    var btns=document.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      var b=btns[i];
+      if((b.textContent||'').trim()!=='✕') continue;
+      var anc=b.parentElement; var ok=false;
+      for(var k=0;k<6 && anc;k++){ if((anc.textContent||'').indexOf('HISTÓRICO GERAL')>=0){ ok=true; break; } anc=anc.parentElement; }
+      if(ok){ b.click(); return true; }
+    }
+    return false;
+  }
+  function irPara(t){
+    if(t.page==='historico'){
+      // Se ja esta aberto, clicar de novo FECHA (alterna) em vez de travar aberto
+      if(modalHistoricoAberto()){ fecharHistorico(); return; }
+      abrirHistorico(0);
+      return;
+    }
+    // Qualquer outra aba: fecha o Historico antes, senao ele fica na frente da nova tela
+    if(modalHistoricoAberto()) fecharHistorico();
+    if(t.page){
+      if(CONTENT.indexOf(ativa)>=0) abaAnterior=ativa;
+      if(t.page==='refugo'){ ativa='refugo'; localStorage.setItem('aba_principal','refugo'); aplicar(); location.hash='refugo'; }
+      else if(t.page==='borra'){ ativa='borra'; localStorage.setItem('aba_principal','borra'); aplicar(); location.hash='borra'; }
+    } else {
+      abaAnterior=t.id; ativa=t.id; localStorage.setItem('aba_principal', t.id);
+      if(location.hash==='#refugo' || location.hash==='#borra') location.hash='';
+      aplicar(); window.scrollTo({top:0,behavior:'smooth'});
+    }
+  }
+  function aplicar(){
+    var root=document.getElementById('root'); if(!root) return;
+    esconderBotoesDuplicados();
+    if(!document.getElementById('abas-principais')){
+      var nav=document.createElement('div'); nav.id='abas-principais';
+      TABS.forEach(function(t){ var b=document.createElement('button'); b.type='button'; b.className='aba-btn'+(t.id===ativa?' ativa':''); b.dataset.aba=t.id; b.innerHTML=t.rotulo+'<small>'+t.sub+'</small>'; b.onclick=function(){ irPara(t); }; nav.appendChild(b); });
+      root.insertBefore(nav, root.firstChild);
+    }
+    document.querySelectorAll('#abas-principais .aba-btn').forEach(function(b){ b.classList.toggle('ativa', b.dataset.aba===ativa); });
+    // CORRECAO DO TRAVAMENTO: so classifica/esconde cards DENTRO de <main>.
+    // Modal de Historico, painel de usuarios, login e paginas em tela cheia ficam FORA de <main>
+    // e nunca sao tocados aqui - por isso o modal nao some mais e o botao de fechar continua clicavel.
+    var main=mainEl(); if(!main) return;
+    main.querySelectorAll('h2').forEach(function(h2){
+      if(eRefugo(h2)) return;
+      var txt=(h2.textContent||'').toUpperCase(); var tab=null;
+      TABS.forEach(function(t){ if(t.match) t.match.forEach(function(m){ if(txt.indexOf(m)>=0) tab=t.id; }); });
+      if(!tab) return;
+      var card=cardDe(h2); if(card && main.contains(card) && !eRefugo(card)){ card.dataset.abaConteudo=tab; }
+    });
+    main.querySelectorAll('div.bg-white.rounded-xl').forEach(function(card){
+      if(eRefugo(card)) return;
+      if(!card.dataset.abaConteudo) card.dataset.abaConteudo='outros';
+    });
+    main.querySelectorAll('[data-aba-conteudo]').forEach(function(card){
+      if(eRefugo(card)) return;
+      var mostrar = (card.dataset.abaConteudo===ativa);
+      card.style.display = mostrar ? '' : 'none';
+      if(mostrar){
+        if(card.dataset.origGrid===undefined) card.dataset.origGrid = card.style.gridColumn || '';
+        card.style.gridColumn = '1 / -1';
+      } else if(card.dataset.origGrid!==undefined){
+        card.style.gridColumn = card.dataset.origGrid;
+      }
+    });
+  }
+  window.addEventListener('hashchange', function(){
+    if(location.hash==='#refugo'){ if(CONTENT.indexOf(ativa)>=0) abaAnterior=ativa; ativa='refugo'; aplicar(); }
+    else if(location.hash==='#borra' || location.hash==='#borra-injetora'){ if(CONTENT.indexOf(ativa)>=0) abaAnterior=ativa; ativa='borra'; aplicar(); }
+    else if(location.hash==='' || location.hash==='#'){ if(ativa==='refugo' || ativa==='borra'){ ativa=abaAnterior; aplicar(); } if(modalHistoricoAberto()) fecharHistorico(); }
+  });
+  if(document.getElementById('root') && window.MutationObserver){ new MutationObserver(aplicar).observe(document.getElementById('root'),{childList:true,subtree:true}); }
+  aplicar(); setTimeout(aplicar,800); setTimeout(aplicar,2000);
 })();
 </script>
 </body>
