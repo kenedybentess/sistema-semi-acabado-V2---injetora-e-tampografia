@@ -25,41 +25,46 @@
 
 <!-- PADRAO TELA CHEIA: todas as paginas no mesmo padrao (Refugo/Borra ja usavam) -->
 <style id="tela-cheia-padrao">
-  /* TELA CHEIA + CABECALHO FIXO + HISTORICO - bloco unico, sem alterar conteudo */
+  /* TELA CHEIA + CABECALHO FIXO + HISTORICO + CABECALHO MINIMO - bloco unico, sem alterar conteudo */
   html, body { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; }
   body { padding-top:100px !important; }
   #root, #root > div { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; box-sizing:border-box !important; }
   /* 1) PILHA FIXA: user-bar 36px / header 64px / abas */
   #user-bar { position:fixed !important; top:0 !important; left:0 !important; right:0 !important; height:36px !important; min-height:36px !important; z-index:10000 !important; box-sizing:border-box !important; }
   #root header { position:fixed !important; top:36px !important; left:0 !important; right:0 !important; width:100% !important; max-width:none !important; margin:0 !important; z-index:9999 !important; box-shadow:0 4px 20px rgba(0,0,0,.25) !important; box-sizing:border-box !important; }
-  #root header > div { width:100% !important; max-width:none !important; margin:0 !important; padding-left:20px !important; padding-right:20px !important; box-sizing:border-box !important; }
+  #root header > div { width:100% !important; max-width:none !important; margin:0 !important; padding-left:20px !important; padding-right:20px !important; box-sizing:border-box !important; justify-content:flex-start !important; }
   #abas-principais { position:sticky !important; top:100px !important; z-index:9990 !important; width:100% !important; max-width:none !important; margin:0 0 20px 0 !important; padding:10px 20px !important; box-sizing:border-box !important; }
   body.borra-open, body.refugo-full, body.etiqueta-open { padding-top:64px !important; }
   body.borra-open #user-bar, body.refugo-full #user-bar, body.etiqueta-open #user-bar { display:none !important; }
   body.borra-open #root header, body.refugo-full #root header, body.etiqueta-open #root header { top:0 !important; }
   body.borra-open #abas-principais, body.refugo-full #abas-principais, body.etiqueta-open #abas-principais { top:64px !important; }
-  /* 2) TELA CHEIA: main 100%. So header/main, NAO modais */
+  /* 2) CABECALHO MINIMO: somente logo Elgin + CONTROLE DE SEMI-ACABADO */
+  /* Esconde no header: selo "I9 | ELGIN", subtitulo "Injecao -> Tampografia..." / versao mobile,
+     e o grupo de botoes da direita (HISTORICO / REFUGO / EDITAR ETIQUETA / EXPORTAR / LIMPAR / Sair).
+     Nada e apagado do codigo: HISTORICO e REFUGO continuam nas abas abaixo, e Sair continua na barra do usuario acima.
+     So o visual do header fica limpo. */
+  #root header span[class*="rounded-full"] { display:none !important; }
+  #root header div[class*="text-white/60"], #root header div[class*="text-white/50"] { display:none !important; }
+  #root header > div > div:last-child { display:none !important; }
+  #btn-admin-users { display:none !important; }
+  #root header > div > div:first-child { gap:12px !important; }
+  #root header img[alt="Elgin"] { height:28px !important; width:auto !important; }
+  /* 3) TELA CHEIA: main 100%. So header/main, NAO modais */
   #root main { width:100% !important; max-width:none !important; margin:0 !important; padding:20px !important; box-sizing:border-box !important; }
   #root main > * { width:100% !important; max-width:none !important; margin-left:0 !important; margin-right:0 !important; box-sizing:border-box !important; }
   #root header [class*="max-w-"], #root main [class*="max-w-"] { max-width:none !important; }
   #root header .mx-auto, #root main .mx-auto { margin-left:0 !important; margin-right:0 !important; }
-  /* 3) OS 4 CARDS: quebra o grid 12 colunas (5/12 + 7/12) */
+  /* 4) OS 4 CARDS: quebra o grid 12 colunas (5/12 + 7/12) */
   #root main > section { width:100% !important; max-width:none !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
   #root main > div.grid { display:block !important; grid-template-columns:1fr !important; width:100% !important; max-width:none !important; margin:0 !important; }
   #root main > div.grid > div { width:100% !important; max-width:none !important; grid-column:1 / -1 !important; margin:0 0 20px 0 !important; box-sizing:border-box !important; }
   #root main div.bg-white.rounded-xl { width:100% !important; max-width:none !important; grid-column:1 / -1 !important; box-sizing:border-box !important; }
-  /* 4) HISTORICO EM TELA CHEIA */
+  /* 5) HISTORICO EM TELA CHEIA + PARTE INFERIOR AJUSTADA */
   #root div.fixed:has(table) { position:fixed !important; inset:0 !important; width:100vw !important; max-width:100vw !important; height:100vh !important; max-height:100vh !important; padding:12px !important; margin:0 !important; z-index:20000 !important; box-sizing:border-box !important; align-items:stretch !important; justify-content:center !important; }
   #root div.fixed:has(table) > div { width:100% !important; max-width:none !important; height:100% !important; max-height:100% !important; margin:0 !important; border-radius:12px !important; box-sizing:border-box !important; display:flex !important; flex-direction:column !important; overflow:hidden !important; }
-  /* 5) PARTE INFERIOR DO HISTORICO - CORRECAO DESTA VEZ */
-  /* Na print: a tabela tinha so 2 linhas, mas a area dela (flex-1) empurrava o rodape
-     la para baixo, deixando um vazio branco enorme no meio, e o selo "Sincronizado"
-     (fixed bottom:16px) ficava por cima do rodape.
-     Agora: tabela rola sozinha, rodape fixo colado embaixo, sem vazio e sem sobreposicao. */
   #root div.fixed:has(table) > div > div:has(table) { flex:1 1 auto !important; min-height:0 !important; overflow:auto !important; }
   #root div.fixed:has(table) > div > div:has(table) table { width:100% !important; }
   #root div.fixed:has(table) > div > div:last-child { flex:0 0 auto !important; position:sticky !important; bottom:0 !important; background:#f8fafc !important; border-top:1px solid #e2e8f0 !important; padding:10px 16px !important; padding-bottom:12px !important; z-index:2 !important; }
-  /* Selo Sincronizado: quando o Historico esta aberto, ele vai para cima do rodape, nao por cima dele */
   body:has(#root div.fixed:has(table)) #firebase-status-badge { bottom:64px !important; }
   /* Refugo / Borra / Etiqueta tambem 100% */
   #secao-refugo, #pagina-borra, #pagina-etiqueta { width:100% !important; max-width:none !important; margin:0 !important; border-radius:0 !important; border-left:none !important; border-right:none !important; box-sizing:border-box !important; }
